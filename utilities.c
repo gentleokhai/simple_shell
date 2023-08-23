@@ -1,128 +1,175 @@
 #include "myheader.h"
 
 /**
- *_strspn - gets the length of a prefix substring
- *@str1: string to be searched
- *@str2: string to be used
+ * Auth: OKHAI GENTLE
  *
- *Return: number of bytes in the initial segment of 5 which are part of accept
+ * Description:
+ * the extended functions for main.c
  */
 
-int _strspn(char *str1, char *str2)
-{
-	int b = 0;
-	int match = 0;
+/**
+ * _getenv - This function will get environment variables value
+ * @name: name of the var
+ *
+ * Return: the value of the variable as a string
+ */
 
-	while (str1[b] != '\0')
+char *_getenv(char *name)
+{
+	char *name_copy;
+	char **my_env;
+	char *pair_pt;
+	
+	for (my_env = environ; *my_env != NULL; my_env++)
 	{
-		if (_strchr(str2, str1[b]) == NULL)
-			break;
-		match++;
-		b++;
+		for (pair_pt = *my_env, name_copy = name;
+		     *pair_pt == *name_copy; pair_pt++, name_copy++)
+		{
+			if (*pair_pt == '=')
+				break;
+		}
+		if ((*pair_pt == '=') && (*name_copy == '\0'))
+			return (pair_pt + 1);
 	}
-	return (match);
+	return (NULL);
 }
 
 /**
- *_strcspn - computes segment of str1 which consists of characters not in str2
- *@str1: string to be searched
- *@str2: string to be used
+ * check_path - This function will check if a command is in the PATH
+ * @command: command to be used
  *
- *Return: index at which a char in str1 exists in str2
+ * Return: path where the command is in, NULL if not set up
  */
 
-int _strcspn(char *str1, char *str2)
+char *check_path(char *command)
 {
-	int len = 0, a;
+	int i;
+	char **path_array = NULL;
+	char *temp, *temp2, *path_cpy;
+	char *pth = _getenv("PATH");
 
-	for (a = 0; str1[a] != '\0'; a++)
-	{
-		if (_strchr(str2, str1[a]) != NULL)
-			break;
-		len++;
-	}
-	return (len);
-}
-
-/**
- *_strchr - char search
- *@s: string to be searched
- *@c: char to be checked
- *
- *Return: pointer to the first occurence of c in s
- */
-
-char *_strchr(char *s, char c)
-{
-	int i = 0;
-
-	for (; s[i] != c && s[i] != '\0'; i++)
-		;
-	if (s[i] == c)
-		return (s + i);
-	else
+	if (pth == NULL || _strlen(pth) == 0)
 		return (NULL);
+	path_cpy = malloc(sizeof(*path_cpy) * (_strlen(pth) + 1));
+	_strcpy(pth, path_cpy);
+	path_array = tokenizer(path_cpy, ":");
+	for (i = 0; path_array[i] != NULL; i++)
+	{
+		temp2 = _strcat(path_array[i], "/");
+		temp = _strcat(temp2, command);
+		if (access(temp, F_OK) == 0)
+		{
+			free(temp2);
+			free(path_array);
+			free(path_cpy);
+			return (temp);
+		}
+		free(temp);
+		free(temp2);
+	}
+	free(path_cpy);
+	free(path_array);
+	return (NULL);
+}
+
+/** parse_command - Function determines the type of the command
+ * @command: command to be parsed
+ *
+ * Return: constant representing the type of the command
+ * Description -
+ * 		 EXTERNAL_COMMAND (1) represents commands example /bin/ls
+ *		 INTERNAL_COMMAND (2) represents commands example exit, env
+ *		 PATH_COMMAND (3) represents command in the PATH example ls
+ *		 INVALID_COMMAND (-1) represents invalid commands
+ */
+
+int parse_command(char *command)
+{
+	int b;
+	char *path = NULL;
+	char *internal_command[] = {"env", "exit", NULL};
+
+	for (b = 0; command[b] != '\0'; b++)
+	{
+		if (command[b] == '/')
+			return (EXTERNAL_COMMAND);
+	}
+	for (b = 0; internal_command[b] != NULL; b++)
+	{
+		if (_strcmp(command, internal_command[b]) == 0)
+			return (INTERNAL_COMMAND);
+	}
+	/* @check_path - To check if a command is in the PATH */
+	path = check_path(command);
+	if (path != NULL)
+	{
+		free(path);
+		return (PATH_COMMAND);
+	}
+
+	return (INVALID_COMMAND);
 }
 
 /**
- *_strtok_r - tokenizes a string
- *@string: string to be tokenized
- *@delim: delimiter to be used to tokenize the string
- *@save_ptr: pointer to be used to keep track of the next token
+ * execute_command - This function executes a command based on it's type!
+ * @tok_cmd: tokenized form of the command .
+ * @cmd_typ: type of the command!
  *
- *Return: The next available token
+ * Return: void
  */
-char *_strtok_r(char *string, char *delim, char **save_ptr)
+void execute_command(char **tok_cmd, int cmd_typ)
 {
-	char *finish;
+	void (*func)(char **command);
 
-	if (string == NULL)
-		string = *save_ptr;
-
-	if (*string == '\0')
+	if (cmd_typ == EXTERNAL_COMMAND)
 	{
-		*save_ptr = string;
-		return (NULL);
+		if (execve(tok_cmd[0], tok_com, NULL) == -1)
+		{
+			perror(_getenv("PWD"));
+			exit(2);
+		}
 	}
-
-	string += _strspn(string, delim);
-	if (*string == '\0')
+	if (cmd_typ == PATH_COMMAND)
 	{
-		*save_ptr = string;
-		return (NULL);
+		if (execve(check_path(tok_cmd[0]), tok_cmd, NULL) == -1)
+		{
+			perror(_getenv("PWD"));
+			exit(2);
+		}
 	}
-
-	finish = string + _strcspn(string, delim);
-	if (*finish == '\0')
+	if (cmd_typ == INTERNAL_COMMAND)
 	{
-		*save_ptr = finish;
-		return (string);
+		func = get_func(tok_cmd[0]);
+		func(tok_cmd);
 	}
-
-	*finish = '\0';
-	*save_ptr = finish + 1;
-	return (string);
+	if (cmd_typ == INVALID_COMMAND)
+	{
+		print(shell_name, STDERR_FILENO);
+		print(": 1: ", STDERR_FILENO);
+		print(tok_cmd[0], STDERR_FILENO);
+		print(": not found\n", STDERR_FILENO);
+		status = 127;
+	}
 }
 
 /**
- * _atoi - changes a string to an integer
- * @s: the string to be changed
+ * get_func - This function retrieves a function based on the command given and a mapping.
+ * @command: string to check against the mapping.
  *
- * Return: the converted int
+ * Return: pointer to proper function, or null on fail.
  */
-int _atoi(char *s)
-{
-	unsigned int n = 0;
 
-	do {
-		if (*s == '-')
-			return (-1);
-		else if ((*s < '0' || *s > '9') && *s != '\0')
-			return (-1);
-		else if (*s >= '0'  && *s <= '9')
-			n = (n * 10) + (*s - '0');
-		else if (n > 0)
-			break;
-	} while (*s++);
-	return (n);
+void (*get_func(char *command))(char **)
+{
+	int ii;
+	function_map mapping[] = {
+		{"env", env}, {"exit", quit}
+	};
+
+	for (ii = 0; ii < 2; ii++)
+	{
+		if (_strcmp(command, mapping[i].command_name) == 0)
+			return (mapping[ii].func);
+	}
+	return (NULL);
 }

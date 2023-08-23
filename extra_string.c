@@ -87,7 +87,7 @@ void *_realloc(void *ptr, unsigned int past_size, unsigned int pres_size)
 		temp_block = malloc(pres_size);
 		if (temp_block != NULL)
 		{
-			for (i = 0; i < min(pres_size, new_size); i++)
+			for (i = 0; i < min(past_size, pres_size); i++)
 				*((char *)temp_block + i) = *((char *)ptr + i);
 			free(ptr);
 			return (temp_block);

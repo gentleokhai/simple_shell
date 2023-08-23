@@ -1,5 +1,4 @@
-#include "shell.h"
-
+#include "myheader.h"
 
 	char **commands = NULL;
 	char *line = NULL;
