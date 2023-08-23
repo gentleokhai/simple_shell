@@ -1,14 +1,15 @@
 #include "myheader.h"
 
+
 	char **commands = NULL;
 	char *line = NULL;
 	char *shell_name = NULL;
 	int status = 0;
 
 /**
- * AUTHOR: OKHAI GENTLE
- * main - the main shell code
- * @argc: number of arguments passed
+ * AUTHOR: Gentle Okhai
+ * main - the main code for the shell
+ * @argc: amount of arguments inputed
  * @argv: program arguments to be parsed
  *
  * applies the functions in utils and helpers
@@ -19,8 +20,8 @@
 
 int main(int argc __attribute__((unused)), char **argv)
 {
-	char **current_command = NULL;
-	int i, type_command = 0;
+    int j, type_command = 0;
+	char **current_cmd = NULL;
 	size_t n = 0;
 
 	signal(SIGINT, ctrl_c_handler);
@@ -38,19 +39,19 @@ int main(int argc __attribute__((unused)), char **argv)
 			remove_comment(line);
 			commands = tokenizer(line, ";");
 
-		for (i = 0; commands[i] != NULL; i++)
+		for (j = 0; commands[j] != NULL; j++)
 		{
-			current_command = tokenizer(commands[i], " ");
-			if (current_command[0] == NULL)
+			current_cmd = tokenizer(commands[j], " ");
+			if (current_cmd[0] == NULL)
 			{
-				free(current_command);
+				free(current_cmd);
 				break;
 			}
-			type_command = parse_command(current_command[0]);
+			type_command = parse_command(current_cmd[0]);
 
-			/* initializer -   */
-			initializer(current_command, type_command);
-			free(current_command);
+			/* The initializing function -   */
+			initializer(current_cmd, type_command);
+			free(current_cmd);
 		}
 		free(commands);
 	}
