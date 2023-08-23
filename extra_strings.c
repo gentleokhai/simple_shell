@@ -25,7 +25,7 @@ void _strcpy(char *source, char *dest)
 
 	for (; source[strg] != '\0'; strg++)
 		dest[strg] = source[strg];
-	dest[i] = '\0';
+	dest[strg] = '\0';
 }
 
 /**

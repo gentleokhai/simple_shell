@@ -13,7 +13,7 @@ void print(char *string, int stream)
 	int strg = 0;
 
     /*Loop statement*/
-	for (; strg[i] != '\0'; strg++)
+	for (; string[strg] != '\0'; strg++)
 		write(stream, &string[strg], 1);
 }
 
